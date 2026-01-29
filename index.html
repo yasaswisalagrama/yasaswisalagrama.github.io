@@ -1,141 +1,191 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <title>Yash</title>
-        <style type="text/css">
-      body {
-    font-family: 'Matura MT Script Capitals', cursive;
-    color: lightgoldenrodyellow;
-    background-image: url('https://cdn.wallpapersafari.com/43/3/bB9uPz.png');
-    background-repeat: no-repeat;
-    background-size: cover; /* Ensure the background image covers the entire screen */
-    display: flex; /* Enable Flexbox for the body */
-    align-items: center; /* Center the content vertically */
-    justify-content: center; /* Center the content horizontally */
-    min-height: 100vh; /* Ensure the body takes the full height of the viewport */
-    margin: 0; /* Remove default margin */
-    padding: 0; /* Remove default padding */
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Metal Price Tracker – Last 7 Days</title>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin: 16px;
+  background: #fafafa;
 }
 
-/* Mobile Styles */
+h1 {
+  text-align: center;
+}
+
+h2 {
+  margin-top: 32px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+  background: #fff;
+}
+
+th, td {
+  padding: 10px;
+  border: 1px solid #ddd;
+  text-align: center;
+}
+
+th {
+  background: #f0f0f0;
+}
+
+.up {
+  color: #c62828;   /* red */
+  font-weight: bold;
+}
+
+.down {
+  color: #2e7d32;  /* green */
+  font-weight: bold;
+}
+
+.same {
+  color: #444;
+}
+
 @media (max-width: 768px) {
-    body {
-        font-size: 16px; /* Adjust font size for smaller screens */
-        padding: 10px; /* Add padding to prevent content from touching the edges */
-        justify-content: flex-start; /* Align content to the top for better readability on small screens */
-        align-items: flex-start; /* Align items to the top */
-    }
+  th, td {
+    font-size: 14px;
+    padding: 6px;
+  }
 }
 
-@media (max-width: 480px) {
-    body {
-        font-size: 14px; /* Further adjust font size for very small screens */
-    }
+.footer {
+  margin-top: 40px;
+  font-size: 13px;
+  color: #555;
+  text-align: center;
+}
+</style>
+</head>
+
+<body>
+
+<h1>📊 Metal Prices (Last 7 Days)</h1>
+
+<h2>🟡 Gold (₹ / gram)</h2>
+<table id="gold-table"></table>
+
+<h2>⚪ Silver</h2>
+<table id="silver-table"></table>
+
+<h2>🟤 Copper (₹ / kg)</h2>
+<table id="copper-table"></table>
+
+<div class="footer" id="updated"></div>
+
+<script>
+async function loadJSON(path) {
+  const res = await fetch(path);
+  return await res.json();
 }
 
+function last7(data) {
+  return data.slice(-7).reverse();
+}
 
-      img {
-        max-width: 100%; /* Set the maximum width to 100% */
-        height: auto; /* Automatically adjust height to maintain aspect ratio */
+/* ---------- GOLD (compare within same purity only) ---------- */
+function renderGoldTable(el, rows) {
+  let html = `
+    <tr>
+      <th>Date</th>
+      <th>Purity</th>
+      <th>Price (₹/g)</th>
+      <th>Source</th>
+    </tr>
+  `;
+
+  const grouped = {};
+  rows.forEach(r => {
+    if (!grouped[r.purity]) grouped[r.purity] = [];
+    grouped[r.purity].push(r);
+  });
+
+  Object.values(grouped).forEach(series => {
+    series.forEach((r, i) => {
+      const prev = series[i + 1]?.price_per_gram_inr;
+      let cls = "same";
+
+      if (prev !== undefined) {
+        if (r.price_per_gram_inr > prev) cls = "up";
+        else if (r.price_per_gram_inr < prev) cls = "down";
       }
-			div {
-			  padding: 40px;
-			  font-size: 75px;
-			  font-family: 'Gabriola', cursive;
-			  text-align: center;
-			  text-transform: uppercase;
-			  text-shadow: 0 0 80px red,0 0 30px FireBrick,0 0 6px DarkRed;
-			  color: linen;
-			}
-			div p { margin:0; }
-			#error:hover { text-shadow: 0 0 200px #ffffff,0 0 80px #008000,0 0 6px #0000ff; }
-			#code:hover { text-shadow: 0 0 100px red,0 0 40px FireBrick,0 0 8px DarkRed; }
-			#error {
-			  color: #fff;
-			  text-shadow: 0 0 80px #ffffff,0 0 30px #008000,0 0 6px #0000ff;
-			}
-			#error span {
-			  animation: upper 11s linear infinite;
-			}
-			#code span:nth-of-type(2) {
-			  animation: lower 10s linear infinite;
-			}
-			#code span:nth-of-type(1) {
-			  text-shadow: none;
-			  opacity:.4;
-			}
-			@keyframes upper {
-			  0%,19.999%,22%,62.999%,64%, 64.999%,70%,100% {
-			    opacity:.99; text-shadow: 0 0 80px #ffffff,0 0 30px #008000,0 0 6px #0000ff;
-			  }
-			  20%,21.999%,63%,63.999%,65%,69.999% {
-			    opacity:0.4; text-shadow: none; 
-			  }
-			}
-			@keyframes lower {
-			  0%,12%,18.999%,23%,31.999%,37%,44.999%,46%,49.999%,51%,58.999%,61%,68.999%,71%,85.999%,96%,100% {
-			    opacity:0.99; text-shadow: 0 0 80px red,0 0 30px FireBrick,0 0 6px DarkRed;
-			  }
-			  19%,22.99%,32%,36.999%,45%,45.999%,50%,50.99%,59%,60.999%,69%,70.999%,86%,95.999% { 
-			    opacity:0.4; text-shadow: none; 
-			  }
-			}
-            #links {
-                position: absolute;
-                left: 0;
-                width: 320px;
-                text-align: center;
-                top: 50%;
-                left: 50%;
-                margin-right: -300px;
-                margin-top: -160px;
-                
-            }
-            h1 {
-                color: gainsboro;
-                font-family: Gabriola;
-                font-weight: 700;
-                font-size: 30px;
-                letter-spacing: 9px;
-                text-transform: uppercase;
-               
-            }
-            h2 {
-                color: beige;
-                font-family: Mistral;
-                font-weight: normal;
-                font-size: 28px;
-                letter-spacing: 1px;
-                word-spacing: 5px;
-            }
-            p {
-                font-size: 23px;
-                letter-spacing: 1px;
-                
-            }
-            a {
-                color: moccasin;
-                font-family: Jokerman;
-            }
-            a:visited{
-            	color: slateblue;
-            }
-            a:hover{
-			     color: lightpink;
-		    } 
-		    a:active{
-			     color: honeydew;
-            }
-        </style>
-    </head>
-    <body>
-        <div id="links">
-            <h1 id="error">Y<span>A</span>saswi</h1>
-  			<h1 id="code">S<span>A</span><span>lagrama</span></h1>
-  			<h2>Eat, Sleep & Things in Between</h2>
-            <p><a href="https://www.linkedin.com/in/yasaswisalagrama/">LinkedIn</a></p>
-		<p><a href="https://github.com/yasaswisalagrama" target="_blank">Github</a></p>
-            <p><a href="https://www.hackerrank.com/profile/GeekYash" target="_blank">Hacker Rank</a></p>
-        </div>
-    </body>
+
+      html += `
+        <tr>
+          <td>${r.date}</td>
+          <td>${r.purity}</td>
+          <td class="${cls}">${r.price_per_gram_inr}</td>
+          <td>${r.source}</td>
+        </tr>
+      `;
+    });
+  });
+
+  el.innerHTML = html;
+}
+
+/* ---------- GENERIC TABLE (silver, copper) ---------- */
+function renderSeriesTable(el, headers, rows, priceKey) {
+  let html = "<tr>" + headers.map(h => `<th>${h}</th>`).join("") + "</tr>";
+
+  rows.forEach((r, i) => {
+    const prev = rows[i + 1]?.[priceKey];
+    let cls = "same";
+
+    if (prev !== undefined) {
+      if (r[priceKey] > prev) cls = "up";
+      else if (r[priceKey] < prev) cls = "down";
+    }
+
+    html += "<tr>" + headers.map(h => {
+      if (h === priceKey) {
+        return `<td class="${cls}">${r[h]}</td>`;
+      }
+      return `<td>${r[h] ?? ""}</td>`;
+    }).join("") + "</tr>";
+  });
+
+  el.innerHTML = html;
+}
+
+async function init() {
+  const gold = last7(await loadJSON("data/gold.json"));
+  const silver = last7(await loadJSON("data/silver.json"));
+  const copper = last7(await loadJSON("data/copper.json"));
+
+  renderGoldTable(document.getElementById("gold-table"), gold);
+
+  renderSeriesTable(
+    document.getElementById("silver-table"),
+    ["date", "price_per_gram_inr", "price_per_kg_inr", "source"],
+    silver,
+    "price_per_kg_inr"
+  );
+
+  renderSeriesTable(
+    document.getElementById("copper-table"),
+    ["date", "price_per_kg_inr", "source"],
+    copper,
+    "price_per_kg_inr"
+  );
+
+  const lastDate = gold.length ? gold[0].date : "N/A";
+  document.getElementById("updated").innerText =
+    "Last updated: " + lastDate +
+    " | 🔴 Increase | 🟢 Decrease | Compared vs previous day";
+}
+
+init();
+</script>
+
+</body>
 </html>
