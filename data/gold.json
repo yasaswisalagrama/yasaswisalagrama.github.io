@@ -10,5 +10,17 @@
     "purity": "22K",
     "price_per_gram_inr": 16878.0,
     "source": "GoldPricesIndia"
+  },
+  {
+    "date": "2026-01-29",
+    "purity": "24K",
+    "price_per_gram_inr": 18493.0,
+    "source": "GoldPricesIndia"
+  },
+  {
+    "date": "2026-01-29",
+    "purity": "22K",
+    "price_per_gram_inr": 16952.0,
+    "source": "GoldPricesIndia"
   }
 ]
