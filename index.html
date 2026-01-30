@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Metal Price Tracker – Last 7 Days</title>
+<title>Metal Price Tracker – OHLC</title>
 
 <style>
 body {
@@ -28,7 +28,7 @@ table {
 }
 
 th, td {
-  padding: 10px;
+  padding: 8px;
   border: 1px solid #ddd;
   text-align: center;
 }
@@ -38,12 +38,12 @@ th {
 }
 
 .up {
-  color: #c62828;   /* red */
+  color: #c62828;
   font-weight: bold;
 }
 
 .down {
-  color: #2e7d32;  /* green */
+  color: #2e7d32;
   font-weight: bold;
 }
 
@@ -53,7 +53,7 @@ th {
 
 @media (max-width: 768px) {
   th, td {
-    font-size: 14px;
+    font-size: 13px;
     padding: 6px;
   }
 }
@@ -69,16 +69,15 @@ th {
 
 <body>
 
-<h1>📊 Metal Prices (Last 7 Days)</h1>
+<h1>📊 Metal Prices – Daily OHLC (Last 7 Days)</h1>
 
-<h2>🟡 Gold</h2>
-<h3>22K (₹ / gram)</h3>
-<table id="gold-22k-table"></table>
+<h2>🟡 Gold 24K (₹ / gram)</h2>
+<table id="gold24-table"></table>
 
-<h3>24K (₹ / gram)</h3>
-<table id="gold-24k-table"></table>
+<h2>🟡 Gold 22K (₹ / gram)</h2>
+<table id="gold22-table"></table>
 
-<h2>⚪ Silver</h2>
+<h2>⚪ Silver (₹ / kg)</h2>
 <table id="silver-table"></table>
 
 <h2>🟤 Copper (₹ / kg)</h2>
@@ -87,6 +86,7 @@ th {
 <div class="footer" id="updated"></div>
 
 <script>
+/* ---------------- HELPERS ---------------- */
 async function loadJSON(path) {
   const res = await fetch(path);
   return await res.json();
@@ -96,31 +96,66 @@ function last7(data) {
   return data.slice(-7).reverse();
 }
 
-/* ---------- GOLD (compare within same purity only) ---------- */
-function renderGoldTable(el, rows, purity) {
+function priceClass(curr, prev) {
+  if (prev === undefined) return "same";
+  if (curr > prev) return "up";
+  if (curr < prev) return "down";
+  return "same";
+}
+
+/* ---- MIGRATION SAFE NORMALIZATION ---- */
+function normalizeOHLC(row) {
+  if (row.close === undefined) {
+    if (row.price_per_gram_inr !== undefined) {
+      row.close = row.price_per_gram_inr;
+    } else if (row.price_per_kg_inr !== undefined) {
+      row.close = row.price_per_kg_inr;
+    }
+  }
+
+  if (row.open === undefined) row.open = row.close;
+  if (row.high === undefined) row.high = row.close;
+  if (row.low === undefined) row.low = row.close;
+
+  return row;
+}
+
+function dedupeByDateAndPurity(rows) {
+  const map = {};
+
+  rows.forEach(r => {
+    const key = r.date + "_" + (r.purity || "");
+    map[key] = r; // later row overwrites earlier one
+  });
+
+  return Object.values(map);
+}
+
+
+/* ---------------- TABLE RENDERERS ---------------- */
+function renderGoldTable(el, rows) {
   let html = `
     <tr>
       <th>Date</th>
-      <th>Price (₹/g)</th>
+      <th>Open</th>
+      <th>High</th>
+      <th>Low</th>
+      <th>Close</th>
       <th>Source</th>
     </tr>
   `;
 
-  const series = rows.filter(r => (r.purity || "").toString().toUpperCase() === purity.toString().toUpperCase());
-
-  series.forEach((r, i) => {
-    const prev = series[i + 1]?.price_per_gram_inr;
-    let cls = "same";
-
-    if (prev !== undefined) {
-      if (r.price_per_gram_inr > prev) cls = "up";
-      else if (r.price_per_gram_inr < prev) cls = "down";
-    }
+  rows.forEach((r, i) => {
+    const prevClose = rows[i + 1]?.close;
+    const cls = priceClass(r.close, prevClose);
 
     html += `
       <tr>
         <td>${r.date}</td>
-        <td class="${cls}">${r.price_per_gram_inr}</td>
+        <td>${r.open}</td>
+        <td>${r.high}</td>
+        <td>${r.low}</td>
+        <td class="${cls}">${r.close}</td>
         <td>${r.source}</td>
       </tr>
     `;
@@ -129,56 +164,66 @@ function renderGoldTable(el, rows, purity) {
   el.innerHTML = html;
 }
 
-/* ---------- GENERIC TABLE (silver, copper) ---------- */
-function renderSeriesTable(el, headers, rows, priceKey) {
-  let html = "<tr>" + headers.map(h => `<th>${h}</th>`).join("") + "</tr>";
+function renderOHLCTable(el, rows) {
+  let html = `
+    <tr>
+      <th>Date</th>
+      <th>Open</th>
+      <th>High</th>
+      <th>Low</th>
+      <th>Close</th>
+      <th>Source</th>
+    </tr>
+  `;
 
   rows.forEach((r, i) => {
-    const prev = rows[i + 1]?.[priceKey];
-    let cls = "same";
+    const prevClose = rows[i + 1]?.close;
+    const cls = priceClass(r.close, prevClose);
 
-    if (prev !== undefined) {
-      if (r[priceKey] > prev) cls = "up";
-      else if (r[priceKey] < prev) cls = "down";
-    }
-
-    html += "<tr>" + headers.map(h => {
-      if (h === priceKey) {
-        return `<td class="${cls}">${r[h]}</td>`;
-      }
-      return `<td>${r[h] ?? ""}</td>`;
-    }).join("") + "</tr>";
+    html += `
+      <tr>
+        <td>${r.date}</td>
+        <td>${r.open}</td>
+        <td>${r.high}</td>
+        <td>${r.low}</td>
+        <td class="${cls}">${r.close}</td>
+        <td>${r.source}</td>
+      </tr>
+    `;
   });
 
   el.innerHTML = html;
 }
 
+/* ---------------- INIT ---------------- */
 async function init() {
-  const gold = last7(await loadJSON("data/gold.json"));
-  const silver = last7(await loadJSON("data/silver.json"));
-  const copper = last7(await loadJSON("data/copper.json"));
-
-  renderGoldTable(document.getElementById("gold-22k-table"), gold, "22K");
-  renderGoldTable(document.getElementById("gold-24k-table"), gold, "24K");
-
-  renderSeriesTable(
-    document.getElementById("silver-table"),
-    ["date", "price_per_gram_inr", "price_per_kg_inr", "source"],
-    silver,
-    "price_per_kg_inr"
+  const goldAll = last7(
+    dedupeByDateAndPurity(
+    (await loadJSON("data/gold.json")).map(normalizeOHLC))
   );
 
-  renderSeriesTable(
-    document.getElementById("copper-table"),
-    ["date", "price_per_kg_inr", "source"],
-    copper,
-    "price_per_kg_inr"
+  const silver = last7(
+    dedupeByDateAndPurity(
+    (await loadJSON("data/silver.json")).map(normalizeOHLC))
   );
 
-  const lastDate = gold.length ? gold[0].date : "N/A";
+  const copper = last7(
+    dedupeByDateAndPurity(
+    (await loadJSON("data/copper.json")).map(normalizeOHLC))
+  );
+
+  const gold24 = goldAll.filter(r => r.purity === "24K");
+  const gold22 = goldAll.filter(r => r.purity === "22K");
+
+  renderGoldTable(document.getElementById("gold24-table"), gold24);
+  renderGoldTable(document.getElementById("gold22-table"), gold22);
+  renderOHLCTable(document.getElementById("silver-table"), silver);
+  renderOHLCTable(document.getElementById("copper-table"), copper);
+
+  const lastDate = goldAll.length ? goldAll[0].date : "N/A";
   document.getElementById("updated").innerText =
     "Last updated: " + lastDate +
-    " | 🔴 Increase | 🟢 Decrease | Compared vs previous day";
+    " | 🔴 Close ↑ vs yesterday | 🟢 Close ↓ vs yesterday | OHLC aggregated hourly";
 }
 
 init();

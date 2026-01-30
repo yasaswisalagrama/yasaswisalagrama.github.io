@@ -7,11 +7,10 @@
   {
     "date": "2026-01-30",
     "price_per_kg_inr": 1381.0,
-    "source": "Economic Times MCX"
-  },
-  {
-    "date": "2026-01-30",
-    "price_per_kg_inr": 1381.0,
-    "source": "Economic Times MCX"
+    "source": "Economic Times MCX",
+    "close": 1337.8,
+    "open": 1381.0,
+    "high": 1381.0,
+    "low": 1337.8
   }
 ]

@@ -36,10 +36,26 @@ def upsert_daily_csv_json(csv_path, json_path, key_fields, new_row):
     updated = False
 
     for row in data:
-        if all(row[k] == new_row[k] for k in key_fields):
+        if all(row.get(k) == new_row[k] for k in key_fields):
+
+            # ---- Legacy normalization ----
+            if "close" not in row:
+                if "price_per_gram_inr" in row:
+                    row["close"] = row["price_per_gram_inr"]
+                elif "price_per_kg_inr" in row:
+                    row["close"] = row["price_per_kg_inr"]
+                else:
+                    continue
+
+            row.setdefault("open", row["close"])
+            row.setdefault("high", row["close"])
+            row.setdefault("low", row["close"])
+
+            # ---- Update OHLC ----
             row["high"] = max(row["high"], new_row["close"])
             row["low"] = min(row["low"], new_row["close"])
             row["close"] = new_row["close"]
+
             updated = True
             break
 
@@ -53,12 +69,21 @@ def upsert_daily_csv_json(csv_path, json_path, key_fields, new_row):
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
 
-    # ---------- Rewrite CSV ----------
+    # ---------- Rewrite CSV (schema-safe) ----------
+    if not data:
+        return
+
+    # Collect ALL keys dynamically (handles schema evolution)
+    fieldnames = []
+    for row in data:
+        for k in row.keys():
+            if k not in fieldnames:
+                fieldnames.append(k)
+
     with open(csv_path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=data[0].keys())
+        writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
         writer.writeheader()
         writer.writerows(data)
-
 
 # ---------------- GOLD (GoldPricesIndia) ----------------
 def scrape_gold():

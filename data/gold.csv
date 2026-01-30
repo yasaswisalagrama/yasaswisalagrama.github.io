@@ -1,11 +1,5 @@
-2026-01-29,22K,16878.0,GoldPricesIndia
-2026-01-29,24K,18413.0,GoldPricesIndia
-2026-01-29,22K,16878.0,GoldPricesIndia
-2026-01-29,24K,18394.0,GoldPricesIndia
-2026-01-29,22K,16861.0,GoldPricesIndia
-2026-01-29,24K,18493.0,GoldPricesIndia
-2026-01-29,22K,16952.0,GoldPricesIndia
-2026-01-30,24K,17859.0,GoldPricesIndia
-2026-01-30,22K,16371.0,GoldPricesIndia
-2026-01-30,24K,18013.0,GoldPricesIndia
-2026-01-30,22K,16512.0,GoldPricesIndia
+date,purity,price_per_gram_inr,source,close,open,high,low
+2026-01-29,24K,18493.0,GoldPricesIndia,,,,
+2026-01-29,22K,16952.0,GoldPricesIndia,,,,
+2026-01-30,24K,17859.0,GoldPricesIndia,17016.0,17859.0,17859.0,17016.0
+2026-01-30,22K,16371.0,GoldPricesIndia,15598.0,16371.0,16371.0,15598.0
