@@ -71,8 +71,12 @@ th {
 
 <h1>📊 Metal Prices (Last 7 Days)</h1>
 
-<h2>🟡 Gold (₹ / gram)</h2>
-<table id="gold-table"></table>
+<h2>🟡 Gold</h2>
+<h3>22K (₹ / gram)</h3>
+<table id="gold-22k-table"></table>
+
+<h3>24K (₹ / gram)</h3>
+<table id="gold-24k-table"></table>
 
 <h2>⚪ Silver</h2>
 <table id="silver-table"></table>
@@ -93,41 +97,33 @@ function last7(data) {
 }
 
 /* ---------- GOLD (compare within same purity only) ---------- */
-function renderGoldTable(el, rows) {
+function renderGoldTable(el, rows, purity) {
   let html = `
     <tr>
       <th>Date</th>
-      <th>Purity</th>
       <th>Price (₹/g)</th>
       <th>Source</th>
     </tr>
   `;
 
-  const grouped = {};
-  rows.forEach(r => {
-    if (!grouped[r.purity]) grouped[r.purity] = [];
-    grouped[r.purity].push(r);
-  });
+  const series = rows.filter(r => (r.purity || "").toString().toUpperCase() === purity.toString().toUpperCase());
 
-  Object.values(grouped).forEach(series => {
-    series.forEach((r, i) => {
-      const prev = series[i + 1]?.price_per_gram_inr;
-      let cls = "same";
+  series.forEach((r, i) => {
+    const prev = series[i + 1]?.price_per_gram_inr;
+    let cls = "same";
 
-      if (prev !== undefined) {
-        if (r.price_per_gram_inr > prev) cls = "up";
-        else if (r.price_per_gram_inr < prev) cls = "down";
-      }
+    if (prev !== undefined) {
+      if (r.price_per_gram_inr > prev) cls = "up";
+      else if (r.price_per_gram_inr < prev) cls = "down";
+    }
 
-      html += `
-        <tr>
-          <td>${r.date}</td>
-          <td>${r.purity}</td>
-          <td class="${cls}">${r.price_per_gram_inr}</td>
-          <td>${r.source}</td>
-        </tr>
-      `;
-    });
+    html += `
+      <tr>
+        <td>${r.date}</td>
+        <td class="${cls}">${r.price_per_gram_inr}</td>
+        <td>${r.source}</td>
+      </tr>
+    `;
   });
 
   el.innerHTML = html;
@@ -162,7 +158,8 @@ async function init() {
   const silver = last7(await loadJSON("data/silver.json"));
   const copper = last7(await loadJSON("data/copper.json"));
 
-  renderGoldTable(document.getElementById("gold-table"), gold);
+  renderGoldTable(document.getElementById("gold-22k-table"), gold, "22K");
+  renderGoldTable(document.getElementById("gold-24k-table"), gold, "24K");
 
   renderSeriesTable(
     document.getElementById("silver-table"),
