@@ -137,7 +137,8 @@ def scrape_gold():
             csv_path="data/gold.csv",
             json_path="data/gold.json",
             key_fields=["date", "purity"],
-            new_row=row
+            new_row=row,
+            unit="gram"
         )
 
 
@@ -166,7 +167,8 @@ def scrape_silver():
         csv_path="data/silver.csv",
         json_path="data/silver.json",
         key_fields=["date"],
-        new_row=row
+        new_row=row,
+        unit="kg"
     )
 
 
@@ -195,7 +197,8 @@ def scrape_copper():
         csv_path="data/copper.csv",
         json_path="data/copper.json",
         key_fields=["date"],
-        new_row=row
+        new_row=row,
+        unit="kg"
     )
 
 
