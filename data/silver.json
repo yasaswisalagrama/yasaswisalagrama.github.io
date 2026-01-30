@@ -10,5 +10,11 @@
     "price_per_gram_inr": 396.0,
     "price_per_kg_inr": 396000.0,
     "source": "Economic Times MCX"
+  },
+  {
+    "date": "2026-01-30",
+    "price_per_gram_inr": 382.2,
+    "price_per_kg_inr": 382203.0,
+    "source": "Economic Times MCX"
   }
 ]
