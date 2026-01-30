@@ -34,9 +34,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git git add data
+          git add data
 
           # commit only if something changed
-          git diff --cached --quiet || git commit -m "Daily metal price update"
+          git diff --cached --quiet || git commit -m "Automated Scrapper - Hourly metal price update"
 
           git push
