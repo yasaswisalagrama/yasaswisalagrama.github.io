@@ -20,27 +20,45 @@ HEADERS = {
 def clean_price(text):
     return float(re.sub(r"[^\d.]", "", text))
 
-def append_csv(path, row):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    exists = os.path.exists(path)
-    with open(path, "a", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=row.keys())
-        if not exists:
-            writer.writeheader()
-        writer.writerow(row)
 
-def append_json(path, row):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
+def upsert_daily_csv_json(csv_path, json_path, key_fields, new_row):
+    os.makedirs(os.path.dirname(csv_path), exist_ok=True)
+
+    # ---------- Load JSON ----------
     data = []
-    if os.path.exists(path):
+    if os.path.exists(json_path):
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(json_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
         except json.JSONDecodeError:
             data = []
-    data.append(row)
-    with open(path, "w", encoding="utf-8") as f:
+
+    updated = False
+
+    for row in data:
+        if all(row[k] == new_row[k] for k in key_fields):
+            row["high"] = max(row["high"], new_row["close"])
+            row["low"] = min(row["low"], new_row["close"])
+            row["close"] = new_row["close"]
+            updated = True
+            break
+
+    if not updated:
+        new_row["open"] = new_row["close"]
+        new_row["high"] = new_row["close"]
+        new_row["low"] = new_row["close"]
+        data.append(new_row)
+
+    # ---------- Save JSON ----------
+    with open(json_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
+
+    # ---------- Rewrite CSV ----------
+    with open(csv_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=data[0].keys())
+        writer.writeheader()
+        writer.writerows(data)
+
 
 # ---------------- GOLD (GoldPricesIndia) ----------------
 def scrape_gold():
@@ -50,7 +68,7 @@ def scrape_gold():
         raise Exception(f"Gold HTTP {r.status_code}")
 
     soup = BeautifulSoup(r.text, "html.parser")
-    table = soup.find_all("table")[0]  # verified earlier
+    table = soup.find_all("table")[0]
 
     prices = {}
 
@@ -71,13 +89,19 @@ def scrape_gold():
         row = {
             "date": TODAY,
             "purity": purity,
-            "price_per_gram_inr": price,
+            "close": price,
             "source": "GoldPricesIndia"
         }
-        append_csv("data/gold.csv", row)
-        append_json("data/gold.json", row)
 
-# ---------------- SILVER (MCX via Economic Times) ----------------
+        upsert_daily_csv_json(
+            csv_path="data/gold.csv",
+            json_path="data/gold.json",
+            key_fields=["date", "purity"],
+            new_row=row
+        )
+
+
+# ---------------- SILVER (MCX – Economic Times) ----------------
 def scrape_silver():
     url = "https://economictimes.indiatimes.com/commoditysummary/symbol-SILVER.cms"
     r = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
@@ -91,19 +115,22 @@ def scrape_silver():
         raise Exception("Silver price not found")
 
     price_kg = clean_price(price_tag.text)
-    price_g = round(price_kg / 1000, 2)
 
     row = {
         "date": TODAY,
-        "price_per_gram_inr": price_g,
-        "price_per_kg_inr": price_kg,
+        "close": price_kg,
         "source": "Economic Times MCX"
     }
 
-    append_csv("data/silver.csv", row)
-    append_json("data/silver.json", row)
+    upsert_daily_csv_json(
+        csv_path="data/silver.csv",
+        json_path="data/silver.json",
+        key_fields=["date"],
+        new_row=row
+    )
 
-# ---------------- COPPER (MCX via Economic Times) ----------------
+
+# ---------------- COPPER (MCX – Economic Times) ----------------
 def scrape_copper():
     url = "https://economictimes.indiatimes.com/commoditysummary/symbol-COPPER.cms"
     r = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
@@ -120,12 +147,17 @@ def scrape_copper():
 
     row = {
         "date": TODAY,
-        "price_per_kg_inr": price,
+        "close": price,
         "source": "Economic Times MCX"
     }
 
-    append_csv("data/copper.csv", row)
-    append_json("data/copper.json", row)
+    upsert_daily_csv_json(
+        csv_path="data/copper.csv",
+        json_path="data/copper.json",
+        key_fields=["date"],
+        new_row=row
+    )
+
 
 # ---------------- RUNNER ----------------
 if __name__ == "__main__":
