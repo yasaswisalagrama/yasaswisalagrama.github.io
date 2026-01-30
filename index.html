@@ -3,73 +3,102 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Metal Price Tracker – OHLC</title>
+<title>Metal Price Tracker - OHLC</title>
 
 <style>
+/* --------- BASE --------- */
 body {
-  font-family: Arial, sans-serif;
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
   margin: 16px;
-  background: #fafafa;
+  background: #0f1115; /* deep charcoal */
+  color: #e6e6e6;
 }
 
 h1 {
   text-align: center;
+  color: #f1f1f1;
+  letter-spacing: 0.5px;
 }
 
 h2 {
-  margin-top: 32px;
+  margin-top: 36px;
+  color: #d0d4db;
 }
 
+/* --------- TABLE --------- */
 table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 8px;
-  background: #fff;
+  margin-top: 12px;
+  background: #161a22; /* graphite */
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
 }
 
 th, td {
-  padding: 8px;
-  border: 1px solid #ddd;
+  padding: 10px;
+  border-bottom: 1px solid #262b36;
   text-align: center;
 }
 
 th {
-  background: #f0f0f0;
+  background: #1f2430;
+  color: #cfd6e4;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  font-size: 12px;
 }
 
+/* --------- ROWS --------- */
+tbody tr:nth-child(even) {
+  background: #141824;
+}
+
+tbody tr:hover {
+  background: #1d2230;
+}
+
+/* --------- PRICE MOVEMENT --------- */
 .up {
-  color: #c62828;
-  font-weight: bold;
+  color: #ff6b6b; /* soft coral red */
+  font-weight: 600;
 }
 
 .down {
-  color: #2e7d32;
-  font-weight: bold;
+  color: #3ddc97; /* muted mint green */
+  font-weight: 600;
 }
 
 .same {
-  color: #444;
+  color: #c0c4cc;
 }
 
+/* --------- RESPONSIVE --------- */
 @media (max-width: 768px) {
   th, td {
     font-size: 13px;
-    padding: 6px;
+    padding: 7px;
   }
 }
 
+/* --------- FOOTER --------- */
 .footer {
-  margin-top: 40px;
+  margin-top: 44px;
   font-size: 13px;
-  color: #555;
+  color: #9aa0aa;
   text-align: center;
+  opacity: 0.85;
 }
 </style>
+
+
 </head>
 
 <body>
 
-<h1>📊 Metal Prices – Daily OHLC (Last 7 Days)</h1>
+<h1>📊 Metal Prices - Hourly (Past 7 Days)</h1>
 
 <h2>🟡 Gold 24K (₹ / gram)</h2>
 <table id="gold24-table"></table>
