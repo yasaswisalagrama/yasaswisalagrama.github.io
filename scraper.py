@@ -21,7 +21,7 @@ def clean_price(text):
     return float(re.sub(r"[^\d.]", "", text))
 
 
-def upsert_daily_csv_json(csv_path, json_path, key_fields, new_row):
+def upsert_daily_csv_json(csv_path, json_path, key_fields, new_row, unit="kg"):
     os.makedirs(os.path.dirname(csv_path), exist_ok=True)
 
     # ---------- Load JSON ----------
@@ -33,25 +33,43 @@ def upsert_daily_csv_json(csv_path, json_path, key_fields, new_row):
         except json.JSONDecodeError:
             data = []
 
+    def normalize_close(value):
+        if unit == "kg":
+            # if accidentally gram-level, convert to kg
+            if value < 10000:   # ₹/kg silver is always >> 10k
+                return value * 1000
+        return value
+
     updated = False
 
     for row in data:
         if all(row.get(k) == new_row[k] for k in key_fields):
 
-            # ---- Legacy normalization ----
+            # ---- LEGACY NORMALIZATION ----
             if "close" not in row:
-                if "price_per_gram_inr" in row:
-                    row["close"] = row["price_per_gram_inr"]
-                elif "price_per_kg_inr" in row:
+                if "price_per_kg_inr" in row:
                     row["close"] = row["price_per_kg_inr"]
+                elif "price_per_gram_inr" in row:
+                    row["close"] = (
+                        row["price_per_gram_inr"] * 1000
+                        if unit == "kg"
+                        else row["price_per_gram_inr"]
+                    )
                 else:
                     continue
+
+            # enforce canonical unit
+            row["close"] = normalize_close(row["close"])
 
             row.setdefault("open", row["close"])
             row.setdefault("high", row["close"])
             row.setdefault("low", row["close"])
 
-            # ---- Update OHLC ----
+            row["open"] = normalize_close(row["open"])
+            row["high"] = normalize_close(row["high"])
+            row["low"] = normalize_close(row["low"])
+
+            # ---- UPDATE OHLC ----
             row["high"] = max(row["high"], new_row["close"])
             row["low"] = min(row["low"], new_row["close"])
             row["close"] = new_row["close"]
@@ -60,6 +78,7 @@ def upsert_daily_csv_json(csv_path, json_path, key_fields, new_row):
             break
 
     if not updated:
+        new_row["close"] = normalize_close(new_row["close"])
         new_row["open"] = new_row["close"]
         new_row["high"] = new_row["close"]
         new_row["low"] = new_row["close"]
@@ -69,14 +88,10 @@ def upsert_daily_csv_json(csv_path, json_path, key_fields, new_row):
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
 
-    # ---------- Rewrite CSV (schema-safe) ----------
-    if not data:
-        return
-
-    # Collect ALL keys dynamically (handles schema evolution)
+    # ---------- Rewrite CSV ----------
     fieldnames = []
-    for row in data:
-        for k in row.keys():
+    for r in data:
+        for k in r.keys():
             if k not in fieldnames:
                 fieldnames.append(k)
 
