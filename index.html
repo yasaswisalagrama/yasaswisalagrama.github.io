@@ -4,101 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Metal Price Tracker - OHLC</title>
-
-<style>
-/* --------- BASE --------- */
-body {
-  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
-  margin: 16px;
-  background: #0f1115; /* deep charcoal */
-  color: #e6e6e6;
-}
-
-h1 {
-  text-align: center;
-  color: #f1f1f1;
-  letter-spacing: 0.5px;
-}
-
-h2 {
-  margin-top: 36px;
-  color: #d0d4db;
-}
-
-/* --------- TABLE --------- */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 12px;
-  background: #161a22; /* graphite */
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
-}
-
-th, td {
-  padding: 10px;
-  border-bottom: 1px solid #262b36;
-  text-align: center;
-}
-
-th {
-  background: #1f2430;
-  color: #cfd6e4;
-  font-weight: 600;
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
-  font-size: 12px;
-}
-
-/* --------- ROWS --------- */
-tbody tr:nth-child(even) {
-  background: #141824;
-}
-
-tbody tr:hover {
-  background: #1d2230;
-}
-
-/* --------- PRICE MOVEMENT --------- */
-.up {
-  color: #ff6b6b; /* soft coral red */
-  font-weight: 600;
-}
-
-.down {
-  color: #3ddc97; /* muted mint green */
-  font-weight: 600;
-}
-
-.same {
-  color: #c0c4cc;
-}
-
-/* --------- RESPONSIVE --------- */
-@media (max-width: 768px) {
-  th, td {
-    font-size: 13px;
-    padding: 7px;
-  }
-}
-
-/* --------- FOOTER --------- */
-.footer {
-  margin-top: 44px;
-  font-size: 13px;
-  color: #9aa0aa;
-  text-align: center;
-  opacity: 0.85;
-}
-</style>
-
-
+<link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
+<div class="header-bar">
+  <div class="header-spacer"></div>
+  <h1 class="page-title">📊 Metal Prices - Hourly (Past 7 Days)</h1>
 
-<h1>📊 Metal Prices - Hourly (Past 7 Days)</h1>
+  <div id="update-info" class="update-info">
+    ⏳ Last updated: <span id="last-updated">Loading…</span><br>
+    ⏭️ Next update: <span id="next-updated">Loading…</span>
+  </div>
+</div>
 
 <h2>🟡 Gold 24K (₹ / gram)</h2>
 <table id="gold24-table"></table>
@@ -114,149 +32,7 @@ tbody tr:hover {
 
 <div class="footer" id="updated"></div>
 
-<script>
-/* ---------------- HELPERS ---------------- */
-async function loadJSON(path) {
-  const res = await fetch(path);
-  return await res.json();
-}
-
-function last7(data) {
-  return data.slice(-7).reverse();
-}
-
-function priceClass(curr, prev) {
-  if (prev === undefined) return "same";
-  if (curr > prev) return "up";
-  if (curr < prev) return "down";
-  return "same";
-}
-
-/* ---- MIGRATION SAFE NORMALIZATION ---- */
-function normalizeOHLC(row) {
-  if (row.close === undefined) {
-    if (row.price_per_gram_inr !== undefined) {
-      row.close = row.price_per_gram_inr;
-    } else if (row.price_per_kg_inr !== undefined) {
-      row.close = row.price_per_kg_inr;
-    }
-  }
-
-  if (row.open === undefined) row.open = row.close;
-  if (row.high === undefined) row.high = row.close;
-  if (row.low === undefined) row.low = row.close;
-
-  return row;
-}
-
-function dedupeByDateAndPurity(rows) {
-  const map = {};
-
-  rows.forEach(r => {
-    const key = r.date + "_" + (r.purity || "");
-    map[key] = r; // later row overwrites earlier one
-  });
-
-  return Object.values(map);
-}
-
-
-/* ---------------- TABLE RENDERERS ---------------- */
-function renderGoldTable(el, rows) {
-  let html = `
-    <tr>
-      <th>Date</th>
-      <th>Open</th>
-      <th>High</th>
-      <th>Low</th>
-      <th>Close</th>
-      <th>Source</th>
-    </tr>
-  `;
-
-  rows.forEach((r, i) => {
-    const prevClose = rows[i + 1]?.close;
-    const cls = priceClass(r.close, prevClose);
-
-    html += `
-      <tr>
-        <td>${r.date}</td>
-        <td>${r.open}</td>
-        <td>${r.high}</td>
-        <td>${r.low}</td>
-        <td class="${cls}">${r.close}</td>
-        <td>${r.source}</td>
-      </tr>
-    `;
-  });
-
-  el.innerHTML = html;
-}
-
-function renderOHLCTable(el, rows) {
-  let html = `
-    <tr>
-      <th>Date</th>
-      <th>Open</th>
-      <th>High</th>
-      <th>Low</th>
-      <th>Close</th>
-      <th>Source</th>
-    </tr>
-  `;
-
-  rows.forEach((r, i) => {
-    const prevClose = rows[i + 1]?.close;
-    const cls = priceClass(r.close, prevClose);
-
-    html += `
-      <tr>
-        <td>${r.date}</td>
-        <td>${r.open}</td>
-        <td>${r.high}</td>
-        <td>${r.low}</td>
-        <td class="${cls}">${r.close}</td>
-        <td>${r.source}</td>
-      </tr>
-    `;
-  });
-
-  el.innerHTML = html;
-}
-
-/* ---------------- INIT ---------------- */
-async function init() {
-  const goldAll = last7(
-    dedupeByDateAndPurity(
-    (await loadJSON("data/gold.json")).map(normalizeOHLC))
-  );
-
-  const silver = last7(
-    dedupeByDateAndPurity(
-    (await loadJSON("data/silver.json")).map(normalizeOHLC))
-  );
-
-  const copper = last7(
-    dedupeByDateAndPurity(
-    (await loadJSON("data/copper.json")).map(normalizeOHLC))
-  );
-
-  const gold24 = goldAll.filter(r => r.purity === "24K");
-  const gold22 = goldAll.filter(r => r.purity === "22K");
-
-  renderGoldTable(document.getElementById("gold24-table"), gold24);
-  renderGoldTable(document.getElementById("gold22-table"), gold22);
-  renderOHLCTable(document.getElementById("silver-table"), silver);
-  renderOHLCTable(document.getElementById("copper-table"), copper);
-
-  const lastDate = goldAll.length ? goldAll[0].date : "N/A";
-  document.getElementById("updated").innerText =
-    "Last updated: " + lastDate +
-    " | 🔴 Close ↑ vs yesterday | 🟢 Close ↓ vs yesterday | OHLC aggregated hourly";
-}
-
-init();
-</script>
+<script src="script.js"></script>
 
 </body>
 </html>
