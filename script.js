@@ -251,10 +251,8 @@ async function init() {
   renderOHLCTable(document.getElementById("silver-table"), silver);
   renderOHLCTable(document.getElementById("copper-table"), copper);
 
-  const lastDate = goldAll.length ? goldAll[0].date : "N/A";
   document.getElementById("updated").innerText =
-    "Last updated: " + lastDate +
-    " | 🔴 Close ↑ vs yesterday | 🟢 Close ↓ vs yesterday | OHLC aggregated hourly";
+    `🔴 Close ↑ vs yesterday | 🟢 Close ↓ vs yesterday | OHLC aggregated hourly`;
 }
 
 init();
