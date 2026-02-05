@@ -55,10 +55,10 @@
   },
   {
     "date": "2026-02-05",
-    "close": 1234.5,
+    "close": 1240.0,
     "source": "Economic Times MCX",
     "open": 1243000.0,
     "high": 1243000.0,
-    "low": 1234.5
+    "low": 1240.0
   }
 ]
