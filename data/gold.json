@@ -142,19 +142,19 @@
   {
     "date": "2026-02-06",
     "purity": "24K",
-    "close": 15941.0,
+    "close": 16229.0,
     "source": "GoldPricesIndia",
     "open": 15572.0,
-    "high": 15962.0,
+    "high": 16229.0,
     "low": 15518.0
   },
   {
     "date": "2026-02-06",
     "purity": "22K",
-    "close": 14613.0,
+    "close": 14876.0,
     "source": "GoldPricesIndia",
     "open": 14274.0,
-    "high": 14631.0,
+    "high": 14876.0,
     "low": 14225.0
   }
 ]
