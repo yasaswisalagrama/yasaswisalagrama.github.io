@@ -137,8 +137,8 @@
     "date": "2026-02-15",
     "close": 1211.0,
     "source": "Economic Times MCX",
-    "open": 1211.0,
-    "high": 1211.0,
+    "open": 1211000.0,
+    "high": 1211000.0,
     "low": 1211.0
   }
 ]
